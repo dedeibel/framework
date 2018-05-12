@@ -295,11 +295,21 @@
 			
 			return $values;
 		}
-		
+	
 		// TODO: is base included in path/segments?!
 		protected function _parseURI(array &$environment) {
-			$pathInfo = (!empty($environment['PATH_INFO']))?
-				$environment['PATH_INFO'] : '/';
+#			error_log('env '. print_r($environment, true) . "\n");
+			$pathInfo = $environment['REQUEST_URI'];
+
+			if (!empty($environment['QUERY_STRING'])) {
+				$pathInfo = substr(
+					$pathInfo,
+					0,
+					-(strlen($environment['QUERY_STRING']) + 1)
+				);
+			} else {
+				$pathInfo = rtrim($pathInfo, '?');
+			}
 			
 			$URI = array(
 				'base' => '/',
@@ -318,42 +328,7 @@
 				$URI['segments'][] = '';
 			}
 			
-			if (empty($_SERVER['REQUEST_URI'])) {
-				return $URI;
-			}
-			
-			$requestUri = $environment['REQUEST_URI'];
-			
-			if (!empty($environment['QUERY_STRING'])) {
-				$requestUri = substr(
-					$requestUri,
-					0,
-					-(strlen($environment['QUERY_STRING']) + 1)
-				);
-			} else {
-				$requestUri = rtrim($requestUri, '?');
-			}
-			
-			$requestUri = urldecode($requestUri);
-			$filteredRequestUri = implode('/',
-				array_filter(
-					explode('/', urldecode($requestUri)),
-					function ($segment) {
-						return $segment !== '';
-					}
-				)
-			);
-			
-			$URI['base'] = mb_substr(
-				((substr($requestUri, 0, 1) === '/')? '/' : '') .
-					$filteredRequestUri .
-					((substr($requestUri, -1) === '/' and !empty($filteredRequestUri))? '/' : ''),
-				0,
-				-(mb_strlen($pathInfo))
-			);
-			
-			$URI['base'] .= '/';
-			
+#			error_log('URI '. print_r($URI, true) . "\n");
 			return $URI;
 		}
 		
